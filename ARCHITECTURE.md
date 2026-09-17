@@ -38,6 +38,6 @@ rules or state.
 
 ## Explicit non-goals for the harness
 
-This repository currently defines the design only. It does not implement a
-Telegram bot, integrate OpenAI, alter `dairn-gm-engine`, or implement DAIRN
+The current lab includes only a minimal Telegram demonstration adapter. It
+does not integrate OpenAI, alter `dairn-gm-engine`, or implement DAIRN
 mechanics.

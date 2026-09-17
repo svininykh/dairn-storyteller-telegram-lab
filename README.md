@@ -4,9 +4,8 @@ Planning and integration lab for a DAIRN StoryTeller experience spanning
 Telegram, OpenAI API assistance, `.dairn` stories, and `dairn-gm-engine`.
 
 The repository establishes the architecture and delivery path, and includes a
-minimal integration with the external DAIRN Great Steppe module for Omen
-resolution. It does not implement the Telegram bot, OpenAI integration, or
-DAIRN mechanics.
+minimal Telegram demo for resolving Omens through the external DAIRN Great
+Steppe module. It does not integrate OpenAI or implement DAIRN mechanics.
 
 Start with [the agent guide](AGENTS.md), then see the
 [architecture](ARCHITECTURE.md), [plan](docs/PLAN.md),
