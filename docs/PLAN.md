@@ -23,3 +23,12 @@
 Each step has a documented interface, tests appropriate to its boundary, and
 does not move ownership of DAIRN rules away from `dairn-gm-engine`. The first
 end-to-end milestone is the successful, repeatable demo in `DEMO.md`.
+
+## Issue #5 baseline — DAIRN Book Package v0.1
+
+Issue #5 formalizes the pre-existing Markdown/YAML practice in
+`DAIRN_STORY_FORMAT.md` and defines `.dairn` as a ZIP-based distribution
+container in `DAIRN_BOOK_PACKAGE.md`. The package reader/writer/validator is a
+small interoperable boundary, not an engine or Telegram feature. A future
+opening-image flow resolves only the package's start chapter and stops after
+image generation; it does not advance or read later chapters.
