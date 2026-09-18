@@ -32,3 +32,37 @@ container in `DAIRN_BOOK_PACKAGE.md`. The package reader/writer/validator is a
 small interoperable boundary, not an engine or Telegram feature. A future
 opening-image flow resolves only the package's start chapter and stops after
 image generation; it does not advance or read later chapters.
+
+## Issue #8 — load and select a hero from a DAIRN book
+
+At book startup, read only structured `heroes` entries from the selected
+`.dairn` package. Select a sole hero automatically; present multiple heroes
+to the reader; and request a non-blank name only when the selected hero has no
+authored name. Keep that supplied name in the current session without changing
+the book. When `heroes` is empty, delegate to the separately implemented
+Engine initial-hero-creation flow; StoryTeller does not invent a hero or its
+parameters. Pass the selected identity and any supplied name to the current
+`dairn-gm-engine` API, retaining only its returned, engine-owned initial
+character state. Do not derive character attributes from book prose or
+duplicate engine rules. Narrative AI is not part of this step.
+
+## Issue #9 — enable Telegram transport development
+
+Telegram transport work is an allowed future integration layer. Telegram
+handlers, callback/update models, and API clients will be isolated in a
+dedicated transport package/module and may depend on StoryTeller
+application-facing ports only. The dependency direction remains `Telegram →
+Application → Domain / Engine`; neither DAIRN domain code nor
+`dairn-gm-engine` may depend on Telegram. This issue changes documentation
+only: it does not introduce Telegram handlers, `/start`, session logic, or
+DAIRN mechanics.
+
+## Issue #6 — hero-state narration
+
+Use the OpenAI Responses API behind a `HeroStateNarrator` application port.
+Supply separate structured sections for DAIRN constraints, engine-generated
+character state, engine-owned Omen result, and provided scene context. Accept
+only a 2–4 sentence `HeroStateNarrative`; it is a proposal and cannot update
+any session, engine state, Omen, or `.dairn` content. API credentials remain
+environment-only. Automated tests use fake narrators and local response
+fixtures; a manual smoke test is documented in the README.

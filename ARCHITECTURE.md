@@ -13,7 +13,9 @@ game-rules implementation.
 | Telegram adapter | Receive user updates and deliver rendered replies. | Conversation policy, game rules, or story content. |
 | Session orchestrator | Coordinate a turn, retain session references, and call collaborators. | Telegram API details or DAIRN mechanics. |
 | Dice Vision recognizer | Propose a die type, value, and confidence from a photo via OpenAI Vision. | Omen resolution or any character state change. |
+| Hero state narrator | Produce a constrained, non-authoritative description from engine state, omen, and scene context. | DAIRN rules, canon, player decisions, or durable state. |
 | Story repository | Locate and load versioned `.dairn` stories. | Runtime session state. |
+| Hero initialization service | Select a structured book hero, request a missing hero name, or delegate a book with no heroes to the Engine creation flow; then retain the engine-provided initial state. | Character-generation rules or extracting character data from prose. |
 | `dairn-gm-engine` | Interpret DAIRN mechanics and produce authoritative state transitions. | Telegram and model integrations. |
 | Session store | Persist the references and state required to resume a player session. | Authored story definitions. |
 
@@ -22,6 +24,7 @@ game-rules implementation.
 | Information | Authoritative source |
 | --- | --- |
 | Story definitions | Versioned `.dairn` files. |
+| Hero identity | A structured `heroes` entry in the selected `.dairn` book, or an explicit player/GM name. |
 | Rule interpretation and legal transitions | `dairn-gm-engine`. |
 | Current player/session state | Session store, as produced by engine transitions. |
 | Incoming/outgoing chat delivery | Telegram API records; the application stores only needed correlation data. |
@@ -41,6 +44,43 @@ shows the player a confirmation step. Only the explicit confirmation follows
 the normal `OmenResolutionService → dairn-gm-engine` path. An uncertain,
 non-d20, or out-of-range result has no Omen path and offers retry or manual
 input instead.
+
+## Telegram transport boundary
+
+Telegram is an adapter layer. Telegram-specific handlers, update/callback
+models, and API clients belong only in the dedicated Telegram transport
+package/module (when introduced), for example
+`org.dairn.storyteller.telegram`. That layer translates Telegram input into
+application-facing commands and renders application/domain results as Telegram
+responses.
+
+`Telegram → StoryTeller application → DAIRN domain / dairn-gm-engine`
+
+This is the only permitted dependency direction. The application and DAIRN
+domain/Engine must not import or otherwise depend on Telegram APIs or models.
+The adapter does not own hero-selection, naming, character-generation, or
+other DAIRN rules; it delegates those decisions to the application and Engine.
+
+## Hero initialization boundary
+
+`selected .dairn book → structured hero identity (or explicit name) →
+dairn-gm-engine character generator / creation flow → initial engine-owned
+character state → session`
+
+The book supplies story context and, when present, a selectable hero identity.
+A name supplied by the reader is session input and never changes the authored
+book definition. A book with no structured heroes is delegated to the Engine's
+separate initial-hero-creation flow. The book is not a character sheet: the
+application never infers missing character values from prose or reimplements
+engine character-generation rules.
+
+## Narrative AI boundary
+
+`engine-owned character state + engine-owned omen + supplied scene context →
+HeroStateNarrator → non-authoritative HeroStateNarrative`
+
+The narrator receives immutable snapshots and cannot write a session, alter an
+omen, or modify book content. Its output is a player-facing proposal only.
 
 ## Explicit non-goals for the harness
 

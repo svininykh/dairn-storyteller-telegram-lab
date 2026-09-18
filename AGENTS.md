@@ -26,8 +26,12 @@ experience.  It currently contains planning documentation only.
    a local, ignored configuration file when configuration is introduced.
 6. Before implementing a feature, update the relevant plan and architecture
    document if the feature changes a responsibility or source of truth.
-7. Do not implement the Telegram bot, OpenAI integration, or DAIRN mechanics
-   as part of this documentation harness task.
+7. Telegram transport adapters are permitted integration work. Keep
+   Telegram-specific code in a dedicated transport module/package and depend
+   only on application-facing ports; do not place Telegram APIs or models in
+   DAIRN domain or Engine code.
+8. Do not reimplement DAIRN mechanics in this repository. OpenAI integration
+   remains subject to its separately documented boundary and task scope.
 
 ## Working agreement
 
