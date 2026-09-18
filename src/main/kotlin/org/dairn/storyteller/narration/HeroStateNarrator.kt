@@ -26,6 +26,27 @@ data class SceneContext(val bookId: String, val storyId: String, val sceneId: St
 
 data class HeroStateNarrative(val text: String)
 
+/**
+ * Provider-independent narrative contract. Implementations translate it to
+ * provider instructions but must not weaken it.
+ */
+object NarrativeConstraints {
+    val INSTRUCTION = """
+        DAIRN narrative constraints:
+        - Treat CharacterState, Resolved Omen, and Story Context as immutable authoritative facts.
+        - Preserve the subjects, participants, and events established by the Resolved Omen.
+        - Do not turn possession, traits, history, inventory, or any character field into a current action or physical state.
+        - Preserve each selected field's subject and scope. A property of clothing, inventory, or another object is not a property or condition of the hero.
+        - Do not infer an internal hero state from the situation: no unprovided feelings, memories, suspicions, beliefs, or intentions.
+        - Do not invent a hero action, decision, intention, or next step.
+        - Do not invent causal relationships or merge independent CharacterState fields into a new fact.
+        - You may select relevant supplied details and describe atmosphere, tension, consequences, uncertainty, and unresolved questions.
+        - Mark an unestablished thematic connection as uncertain; never present interpretation as a new fact.
+        - Leave the next meaningful decision to the human reader.
+        Output exactly 2 to 4 concise Russian sentences.
+    """.trimIndent()
+}
+
 sealed interface NarrationResult {
     data class Narrated(val narrative: HeroStateNarrative) : NarrationResult
     data class Failure(val message: String) : NarrationResult
@@ -65,7 +86,7 @@ class OpenAiHeroStateNarrator(
         put("input", buildJsonArray {
             add(buildJsonObject {
                 put("role", "developer")
-                put("content", "DAIRN constraints: describe only supplied facts. Do not change state or omen, invent dice, mechanics, rules, canon, facts outside scene context, or player decisions. Output exactly 2 to 4 concise Russian sentences.")
+                put("content", NarrativeConstraints.INSTRUCTION)
             })
             add(buildJsonObject {
                 put("role", "user")

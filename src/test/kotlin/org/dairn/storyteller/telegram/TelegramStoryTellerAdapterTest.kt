@@ -75,7 +75,7 @@ class TelegramStoryTellerAdapterTest {
     @Test
     fun `Omen result is rendered before the narrator output`() {
         val narrator = HeroStateNarrator { _, _, _ ->
-            NarrationResult.Narrated(HeroStateNarrative("Ветер меняется. Айбике слышит зов степи."))
+            NarrationResult.Narrated(HeroStateNarrative("Ветер меняется. Над степью сгущается тревога."))
         }
         val narratorAdapter = TelegramStoryTellerAdapter(
             StoryTellerApplication(InMemorySessionStore(), D20Roller { 7 }, heroStateNarrator = narrator),
@@ -91,7 +91,7 @@ class TelegramStoryTellerAdapterTest {
 
         assertEquals(2, views.size)
         assertTrue(views[0].text.startsWith("d20: 7"))
-        assertEquals("Ветер меняется. Айбике слышит зов степи.", views[1].text)
+        assertEquals("Ветер меняется. Над степью сгущается тревога.", views[1].text)
     }
 
     private class FakeVision : DiceVisionRecognizer {

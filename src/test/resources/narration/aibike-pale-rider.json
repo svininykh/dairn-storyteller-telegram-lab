@@ -1,0 +1,28 @@
+{
+  "character_state": {
+    "name": "Aibike",
+    "life_path": "Keeper of Family Memory",
+    "experience": "Family Memory",
+    "talisman": "Family Medallion",
+    "bond": "Aibike inherited an old belt with a metal buckle from a deceased relative, together with an unspoken family debt.",
+    "speech": "Mysterious",
+    "clothing": "bloodstained",
+    "attributes": { "str": 10, "dex": 7, "wil": 9, "hp": 1 }
+  },
+  "resolved_omen": {
+    "roll": 20,
+    "name": "Pale Rider",
+    "facts": "Children in different settlements dream about the same nearly transparent pale rider. Afterwards people increasingly fail to understand one another, familiar words sound foreign, conversations turn into arguments, and the steppe gradually burns behind the rider in the dream."
+  },
+  "must_not_assert_as_fact": [
+    "Aibike is holding the Family Medallion.",
+    "Aibike dreams about the Pale Rider.",
+    "Aibike decides to investigate the debt.",
+    "Aibike is bloodstained.",
+    "Aibike feels fear when she hears about the Pale Rider.",
+    "Aibike remembers her family's debt.",
+    "Aibike suspects the Pale Rider is connected to her family.",
+    "The Family Medallion represents the family debt.",
+    "The Pale Rider is connected to Aibike's debt."
+  ]
+}

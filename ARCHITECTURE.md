@@ -80,11 +80,23 @@ engine character-generation rules.
 
 ## Narrative AI boundary
 
-`engine-owned character state + engine-owned omen + supplied scene context →
-HeroStateNarrator → non-authoritative HeroStateNarrative`
+`engine-owned character state + engine-owned omen + supplied scene context
++ narrative constraints → HeroStateNarrator → non-authoritative
+HeroStateNarrative`
 
 The narrator receives immutable snapshots and cannot write a session, alter an
 omen, or modify book content. Its output is a player-facing proposal only.
+It preserves authoritative facts, including participants in an Omen; it does
+not turn possession into a current action, choose an action for the hero,
+assert an unprovided causal relationship, or merge independent character
+properties into a new fact. When selecting a detail, it preserves that field's
+subject and scope: a property of clothing, inventory, or another object is not
+a property or condition of the hero. It does not infer an unprovided internal
+state for the hero, such as feelings, memories, suspicions, beliefs, or
+intentions, from a threatening situation. It may select relevant details, atmosphere,
+tension, uncertain thematic connections, and unresolved questions. The next
+meaningful decision remains with the reader. These are application contract
+rules for every narrator implementation, not Telegram or provider rules.
 After the application has persisted a resolved Omen, it invokes this boundary
 with the session's complete engine-owned `CharacterState`, the Omen, and
 transport-independent story context. Telegram then displays the Omen result

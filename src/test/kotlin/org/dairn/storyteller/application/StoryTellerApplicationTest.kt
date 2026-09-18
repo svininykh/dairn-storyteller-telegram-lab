@@ -62,7 +62,7 @@ class StoryTellerApplicationTest {
         var received: Triple<CharacterState, org.dairn.steppe.GreatSteppeOmen, SceneContext>? = null
         val narrator = HeroStateNarrator { character, omen, scene ->
             received = Triple(character, omen, scene)
-            NarrationResult.Narrated(HeroStateNarrative("Ветер приносит знамение. Айбике делает первый шаг."))
+            NarrationResult.Narrated(HeroStateNarrative("Ветер приносит знамение. Что оно значит для Айбике, остаётся неясным."))
         }
         val application = StoryTellerApplication(
             InMemorySessionStore(), D20Roller { 7 }, heroStateNarrator = narrator,

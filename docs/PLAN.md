@@ -95,3 +95,21 @@ result and the non-authoritative `HeroStateNarrative` as distinct presentation
 steps; Telegram only renders these application results. Narration failure is
 reported without changing the stored character, Omen, or roll. No narrator may
 run before an Omen exists, and it never writes engine or session state.
+
+## Issue #13 — constrain hero-state narration
+
+Strengthen the existing `HeroStateNarrator` contract without adding another
+narrator boundary. Authoritative `CharacterState`, resolved Omen, and story
+context are immutable facts; the narrator may select relevant facts and offer
+atmosphere, tension, uncertain thematic connections, or questions, but may
+not invent a current hero action or decision, change Omen participants, assert
+causality, or merge independent character fields into a new relationship. The
+scope and subject of every selected field must remain intact: for example,
+`Clothing = bloodstained` must not become that the hero is bloodstained. The
+threatening situation also does not establish a hero's feelings, memories,
+suspicions, beliefs, or intentions. The
+next meaningful action remains with the reader. Keep these constraints
+provider- and Telegram-independent; an AI adapter renders them as provider
+instructions. Preserve the Aibike + Pale Rider input as a local regression
+fixture and cover the semantic failure classes with automated contract
+tests.
