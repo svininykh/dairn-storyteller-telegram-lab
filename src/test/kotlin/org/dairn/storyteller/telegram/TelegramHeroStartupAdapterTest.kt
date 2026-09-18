@@ -17,12 +17,14 @@ import kotlin.test.assertTrue
 
 class TelegramHeroStartupAdapterTest {
     @Test
-    fun `one named hero starts story without a hero prompt`() {
-        val views = adapter(namedBook()).onStart(1)
+    fun `one named hero renders engine profile before the Omen choices`() {
+        val startup = adapter(namedBook())
+        val views = startup.onStart(1)
 
         assertTrue(views.first().text.contains("Айбике"))
         assertFalse(views.any { it.text == "Выберите героя:" })
-        assertEquals(TelegramStoryTellerAdapter.DIGITAL_CALLBACK, views.last().keyboard.flatten().first().callbackData)
+        assertTrue(views.first().text.contains("Жизненный путь"))
+        assertEquals(TelegramStoryTellerAdapter.CONTINUE_PROFILE_CALLBACK, views.single().keyboard.flatten().single().callbackData)
     }
 
     @Test
@@ -30,9 +32,9 @@ class TelegramHeroStartupAdapterTest {
         val adapter = adapter(multipleBook())
 
         val choice = adapter.onStart(1).single()
-        assertEquals(listOf("hero:aibike", "hero:karashash"), choice.keyboard.flatten().map { it.callbackData })
+        assertEquals(listOf("hero:select:aibike", "hero:select:karashash"), choice.keyboard.flatten().map { it.callbackData })
 
-        assertTrue(adapter.onCallback(1, "hero:karashash").first().text.contains("Қарашаш"))
+        assertTrue(adapter.onCallback(1, "hero:select:karashash").first().text.contains("Қарашаш"))
     }
 
     @Test
@@ -50,9 +52,9 @@ class TelegramHeroStartupAdapterTest {
         adapter.onStart(1)
         adapter.onStart(2)
 
-        assertTrue(adapter.onCallback(1, "hero:aibike").first().text.contains("Айбике"))
-        assertEquals("Выбор героя больше не активен. Отправьте /start.", adapter.onCallback(1, "hero:karashash").single().text)
-        assertTrue(adapter.onCallback(2, "hero:karashash").first().text.contains("Қарашаш"))
+        assertTrue(adapter.onCallback(1, "hero:select:aibike").first().text.contains("Айбике"))
+        assertEquals("Выбор героя больше не активен. Отправьте /start.", adapter.onCallback(1, "hero:select:karashash").single().text)
+        assertTrue(adapter.onCallback(2, "hero:select:karashash").first().text.contains("Қарашаш"))
     }
 
     @Test

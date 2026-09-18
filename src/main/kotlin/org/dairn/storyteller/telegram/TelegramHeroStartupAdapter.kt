@@ -53,7 +53,7 @@ class TelegramHeroStartupAdapter(
         }
         is HeroStartupResult.Started -> {
             states.remove(chatId)
-            storyTeller.onHeroStarted(chatId, result.hero.name)
+            storyTeller.onHeroStarted(chatId, result.characterState)
         }
         HeroStartupResult.CreationRequired -> {
             states.remove(chatId)
@@ -68,6 +68,6 @@ class TelegramHeroStartupAdapter(
     }
 
     companion object {
-        const val HERO_CALLBACK_PREFIX = "hero:"
+        const val HERO_CALLBACK_PREFIX = "hero:select:"
     }
 }

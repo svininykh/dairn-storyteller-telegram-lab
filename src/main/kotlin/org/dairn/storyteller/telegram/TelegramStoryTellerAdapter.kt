@@ -2,7 +2,7 @@ package org.dairn.storyteller.telegram
 
 import org.dairn.storyteller.application.RollChoice
 import org.dairn.storyteller.application.DicePhoto
-import org.dairn.storyteller.application.DemoCharacter
+import org.dairn.storyteller.application.CharacterState
 import org.dairn.storyteller.application.StoryTellerApplication
 import org.dairn.storyteller.application.StoryTellerResponse
 
@@ -12,8 +12,8 @@ data class TelegramButton(val label: String, val callbackData: String)
 class TelegramStoryTellerAdapter(private val application: StoryTellerApplication) {
     fun onStart(chatId: Long): List<TelegramView> = application.start(chatId).map(::render)
 
-    fun onHeroStarted(chatId: Long, name: String): List<TelegramView> =
-        application.start(chatId, DemoCharacter(name, "Герой DAIRN готов к началу истории.")).map(::render)
+    fun onHeroStarted(chatId: Long, characterState: CharacterState): List<TelegramView> =
+        listOf(render(application.startGeneratedHero(chatId, characterState)))
 
     fun onCallback(chatId: Long, data: String): TelegramView = render(
         when (data) {
@@ -23,6 +23,7 @@ class TelegramStoryTellerAdapter(private val application: StoryTellerApplication
             CONFIRM_PHOTO_CALLBACK -> application.confirmPhotoRoll(chatId)
             REPEAT_PHOTO_CALLBACK -> application.repeatPhoto(chatId)
             MANUAL_FROM_PHOTO_CALLBACK -> application.enterManualRoll(chatId)
+            CONTINUE_PROFILE_CALLBACK -> application.continueAfterCharacterProfile(chatId)
             else -> StoryTellerResponse.Error("Неизвестное действие.")
         },
     )
@@ -33,6 +34,13 @@ class TelegramStoryTellerAdapter(private val application: StoryTellerApplication
 
     private fun render(response: StoryTellerResponse): TelegramView = when (response) {
         is StoryTellerResponse.Start -> TelegramView("${response.character.name}\n${response.character.description}")
+        is StoryTellerResponse.CharacterProfile -> TelegramView(
+            text = response.characterState.fields.joinToString(
+                prefix = "Профиль героя\n\n",
+                separator = "\n",
+            ) { field -> "${field.label}: ${field.values.joinToString(", ")}" },
+            keyboard = listOf(listOf(TelegramButton("Продолжить к Знамению", CONTINUE_PROFILE_CALLBACK))),
+        )
         StoryTellerResponse.ChooseRoll -> TelegramView(
             text = "Определи своё Знамение — брось d20",
             keyboard = listOf(
@@ -71,5 +79,6 @@ class TelegramStoryTellerAdapter(private val application: StoryTellerApplication
         const val CONFIRM_PHOTO_CALLBACK = "omen:photo:confirm"
         const val REPEAT_PHOTO_CALLBACK = "omen:photo:repeat"
         const val MANUAL_FROM_PHOTO_CALLBACK = "omen:photo:manual"
+        const val CONTINUE_PROFILE_CALLBACK = "hero:profile:continue"
     }
 }

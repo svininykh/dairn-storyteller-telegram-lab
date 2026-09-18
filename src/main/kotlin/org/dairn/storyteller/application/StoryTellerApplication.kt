@@ -7,6 +7,7 @@ import kotlin.random.Random
 data class DemoCharacter(val name: String, val description: String)
 
 enum class SessionStep {
+    VIEWING_CHARACTER_PROFILE,
     CHOOSING_ROLL,
     WAITING_FOR_MANUAL_ROLL,
     WAITING_FOR_PHOTO,
@@ -31,6 +32,7 @@ data class StoryTellerSession(
     val chatId: Long,
     val character: DemoCharacter,
     val step: SessionStep,
+    val characterState: CharacterState? = null,
     val pendingDice: RecognizedDice? = null,
     val omen: GreatSteppeOmen? = null,
 )
@@ -57,6 +59,7 @@ enum class RollChoice { DIGITAL, PHOTO, MANUAL }
 
 sealed interface StoryTellerResponse {
     data class Start(val character: DemoCharacter) : StoryTellerResponse
+    data class CharacterProfile(val characterState: CharacterState) : StoryTellerResponse
     data object ChooseRoll : StoryTellerResponse
     data object RequestManualRoll : StoryTellerResponse
     data object RequestPhoto : StoryTellerResponse
@@ -77,10 +80,40 @@ class StoryTellerApplication(
         return listOf(StoryTellerResponse.Start(character), StoryTellerResponse.ChooseRoll)
     }
 
-    fun chooseRoll(chatId: Long, choice: RollChoice): StoryTellerResponse = when (choice) {
-        RollChoice.DIGITAL -> resolve(chatId, d20Roller.roll())
-        RollChoice.MANUAL -> transitionToManualInput(chatId)
-        RollChoice.PHOTO -> transitionToPhotoInput(chatId)
+    fun startGeneratedHero(chatId: Long, characterState: CharacterState): StoryTellerResponse {
+        val name = requireNotNull(characterState.name) { "Engine generated a character without a name" }
+        sessionStore.save(
+            StoryTellerSession(
+                chatId = chatId,
+                character = DemoCharacter(name, "Герой DAIRN создан движком."),
+                step = SessionStep.VIEWING_CHARACTER_PROFILE,
+                characterState = characterState,
+            ),
+        )
+        return StoryTellerResponse.CharacterProfile(characterState)
+    }
+
+    fun continueAfterCharacterProfile(chatId: Long): StoryTellerResponse {
+        val session = sessionStore.get(chatId)
+            ?: return StoryTellerResponse.Error("Сначала отправьте /start.")
+        if (session.step != SessionStep.VIEWING_CHARACTER_PROFILE || session.characterState == null) {
+            return StoryTellerResponse.Error("Сначала создайте и просмотрите профиль героя.")
+        }
+        sessionStore.save(session.copy(step = SessionStep.CHOOSING_ROLL))
+        return StoryTellerResponse.ChooseRoll
+    }
+
+    fun chooseRoll(chatId: Long, choice: RollChoice): StoryTellerResponse {
+        val session = sessionStore.get(chatId)
+            ?: return StoryTellerResponse.Error("Сначала отправьте /start.")
+        if (session.step != SessionStep.CHOOSING_ROLL) {
+            return StoryTellerResponse.Error("Сначала завершите предыдущий этап.")
+        }
+        return when (choice) {
+            RollChoice.DIGITAL -> resolve(chatId, d20Roller.roll())
+            RollChoice.MANUAL -> transitionToManualInput(chatId)
+            RollChoice.PHOTO -> transitionToPhotoInput(chatId)
+        }
     }
 
     fun submitManualRoll(chatId: Long, text: String): StoryTellerResponse {

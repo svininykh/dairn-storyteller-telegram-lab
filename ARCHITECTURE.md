@@ -86,6 +86,13 @@ HeroStateNarrator → non-authoritative HeroStateNarrative`
 The narrator receives immutable snapshots and cannot write a session, alter an
 omen, or modify book content. Its output is a player-facing proposal only.
 
+## Generated character session boundary
+
+The complete `CharacterState` returned by `dairn-gm-engine` is retained by the
+active StoryTeller session. Telegram renders the engine-owned fields without
+recalculating them; the reader must continue past that profile before the
+existing Omen d20 flow is offered.
+
 ## Explicit non-goals for the harness
 
 The current lab includes only a minimal Telegram demonstration adapter. It does

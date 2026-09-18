@@ -77,3 +77,11 @@ only a 2–4 sentence `HeroStateNarrative`; it is a proposal and cannot update
 any session, engine state, Omen, or `.dairn` content. API credentials remain
 environment-only. Automated tests use fake narrators and local response
 fixtures; a manual smoke test is documented in the README.
+
+## Issue #11 — persist generated character state
+
+Pass the complete engine-generated `CharacterState` from hero startup into the
+active StoryTeller session. Render its existing engine-owned fields as a
+profile, then require an explicit continue action before offering the existing
+Omen d20 choices. No character-generation or Omen rules are added to the
+application or Telegram layers.

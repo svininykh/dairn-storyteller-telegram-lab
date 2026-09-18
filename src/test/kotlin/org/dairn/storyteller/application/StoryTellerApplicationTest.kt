@@ -1,5 +1,9 @@
 package org.dairn.storyteller.application
 
+import org.dairn.core.Dice
+import org.dairn.core.DiceRoll
+import org.dairn.steppe.GreatSteppeCharacterGenerator
+import org.dairn.steppe.GreatSteppeGenerationInput
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -18,6 +22,23 @@ class StoryTellerApplicationTest {
         assertIs<StoryTellerResponse.Start>(responses.first())
         assertIs<StoryTellerResponse.ChooseRoll>(responses.last())
         assertEquals(SessionStep.CHOOSING_ROLL, sessions.get(CHAT_ID)?.step)
+    }
+
+    @Test
+    fun `generated engine character is stored and shown before Omen choices`() {
+        val state = GreatSteppeCharacterGenerator().generate(
+            GreatSteppeGenerationInput("Айбике"),
+            Dice { count, sides -> DiceRoll(List(count) { 1 }, sides) },
+        )
+
+        val profile = assertIs<StoryTellerResponse.CharacterProfile>(application.startGeneratedHero(CHAT_ID, state))
+
+        assertEquals(state, profile.characterState)
+        assertEquals(state, sessions.get(CHAT_ID)?.characterState)
+        assertEquals(SessionStep.VIEWING_CHARACTER_PROFILE, sessions.get(CHAT_ID)?.step)
+        assertIs<StoryTellerResponse.Error>(application.chooseRoll(CHAT_ID, RollChoice.DIGITAL))
+        assertIs<StoryTellerResponse.ChooseRoll>(application.continueAfterCharacterProfile(CHAT_ID))
+        assertEquals(state, sessions.get(CHAT_ID)?.characterState)
     }
 
     @Test
