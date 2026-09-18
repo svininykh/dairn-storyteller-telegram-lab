@@ -57,6 +57,17 @@ Application → Domain / Engine`; neither DAIRN domain code nor
 only: it does not introduce Telegram handlers, `/start`, session logic, or
 DAIRN mechanics.
 
+## Issue #10 — integrate hero startup with Telegram
+
+The Telegram adapter will load the configured `.dairn` book on `/start` and
+delegate hero startup to the application flow from Issue #8. It will render a
+stable-ID inline choice for `SelectHero`, collect a name only while the
+application is awaiting one, continue the existing StoryTeller flow after
+`Started`, and report `CreationRequired` explicitly until an Engine creation
+flow is available. Per-chat transport state will reject stale, repeated, or
+unexpected input without mutating hero state. Telegram remains an adapter;
+hero selection and name validation stay in the application/Engine.
+
 ## Issue #6 — hero-state narration
 
 Use the OpenAI Responses API behind a `HeroStateNarrator` application port.

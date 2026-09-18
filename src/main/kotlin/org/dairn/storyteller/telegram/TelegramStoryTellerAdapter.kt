@@ -2,6 +2,7 @@ package org.dairn.storyteller.telegram
 
 import org.dairn.storyteller.application.RollChoice
 import org.dairn.storyteller.application.DicePhoto
+import org.dairn.storyteller.application.DemoCharacter
 import org.dairn.storyteller.application.StoryTellerApplication
 import org.dairn.storyteller.application.StoryTellerResponse
 
@@ -10,6 +11,9 @@ data class TelegramButton(val label: String, val callbackData: String)
 
 class TelegramStoryTellerAdapter(private val application: StoryTellerApplication) {
     fun onStart(chatId: Long): List<TelegramView> = application.start(chatId).map(::render)
+
+    fun onHeroStarted(chatId: Long, name: String): List<TelegramView> =
+        application.start(chatId, DemoCharacter(name, "Герой DAIRN готов к началу истории.")).map(::render)
 
     fun onCallback(chatId: Long, data: String): TelegramView = render(
         when (data) {

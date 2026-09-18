@@ -2,6 +2,11 @@ package org.dairn.storyteller.telegram
 
 import org.dairn.storyteller.application.StoryTellerApplication
 import org.dairn.storyteller.application.DicePhoto
+import org.dairn.storyteller.application.BookStartupApplication
+import org.dairn.storyteller.application.EngineHeroStateInitializer
+import org.dairn.storyteller.application.HeroInitializationService
+import org.dairn.storyteller.application.InMemoryBookGameSessionStore
+import org.dairn.storyteller.book.DairnBookPackage
 import org.dairn.storyteller.vision.OpenAiDiceVisionRecognizer
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient
 import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication
@@ -17,6 +22,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.nio.file.Path
 
 fun main() {
     println("DAIRN StoryTeller Telegram Lab v${ApplicationVersion.value}")
@@ -25,8 +31,13 @@ fun main() {
     }
     val telegramClient = OkHttpTelegramClient(token)
     val adapter = TelegramStoryTellerAdapter(StoryTellerApplication(diceVisionRecognizer = OpenAiDiceVisionRecognizer.fromEnvironment()))
+    val heroStartup = TelegramHeroStartupAdapter(
+        BookStartupApplication(InMemoryBookGameSessionStore(), HeroInitializationService(EngineHeroStateInitializer())),
+        { DairnBookPackage.read(Path.of(requireNotNull(System.getenv("DAIRN_BOOK_PATH")) { "DAIRN_BOOK_PATH must be configured" })) },
+        adapter,
+    )
     TelegramBotsLongPollingApplication().use { application ->
-        application.registerBot(token, StoryTellerUpdateConsumer(telegramClient, adapter))
+        application.registerBot(token, StoryTellerUpdateConsumer(telegramClient, adapter, heroStartup))
         Thread.currentThread().join()
     }
 }
@@ -44,6 +55,7 @@ object ApplicationVersion {
 class StoryTellerUpdateConsumer(
     private val telegramClient: TelegramClient,
     private val adapter: TelegramStoryTellerAdapter,
+    private val heroStartup: TelegramHeroStartupAdapter,
     private val token: String = requireNotNull(System.getenv("TELEGRAM_BOT_TOKEN")),
     private val httpClient: HttpClient = HttpClient.newHttpClient(),
 ) : LongPollingSingleThreadUpdateConsumer {
@@ -51,8 +63,8 @@ class StoryTellerUpdateConsumer(
         when {
             update.hasMessage() && update.message.hasText() -> {
                 val chatId = update.message.chatId
-                val views = if (update.message.text == "/start") adapter.onStart(chatId)
-                else listOf(adapter.onText(chatId, update.message.text))
+                val views = if (update.message.text == "/start") heroStartup.onStart(chatId)
+                else heroStartup.onText(chatId, update.message.text) ?: listOf(adapter.onText(chatId, update.message.text))
                 views.forEach { send(chatId, it) }
             }
             update.hasMessage() && update.message.hasPhoto() -> {
@@ -63,7 +75,9 @@ class StoryTellerUpdateConsumer(
             update.hasCallbackQuery() -> {
                 val callback = update.callbackQuery
                 val chatId = callback.message.chatId
-                send(chatId, adapter.onCallback(chatId, callback.data))
+                val views = if (heroStartup.handlesCallback(callback.data)) heroStartup.onCallback(chatId, callback.data)
+                else listOf(adapter.onCallback(chatId, callback.data))
+                views.forEach { send(chatId, it) }
             }
         }
     }

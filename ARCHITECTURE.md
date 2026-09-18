@@ -60,6 +60,10 @@ This is the only permitted dependency direction. The application and DAIRN
 domain/Engine must not import or otherwise depend on Telegram APIs or models.
 The adapter does not own hero-selection, naming, character-generation, or
 other DAIRN rules; it delegates those decisions to the application and Engine.
+For multi-message startup it keeps only transport correlation state (the
+Telegram chat/session key and the expected input kind). A callback or text
+message is forwarded only when it matches that state; the application remains
+the authority for the hero transition and validation.
 
 ## Hero initialization boundary
 

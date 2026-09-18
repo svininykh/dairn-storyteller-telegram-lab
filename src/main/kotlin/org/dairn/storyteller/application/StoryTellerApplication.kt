@@ -72,9 +72,9 @@ class StoryTellerApplication(
     private val omenResolutionService: OmenResolutionService = OmenResolutionService(),
     private val diceVisionRecognizer: DiceVisionRecognizer = DiceVisionRecognizer { DiceRecognition.Uncertain },
 ) {
-    fun start(chatId: Long): List<StoryTellerResponse> {
-        sessionStore.save(StoryTellerSession(chatId, DEMO_CHARACTER, SessionStep.CHOOSING_ROLL))
-        return listOf(StoryTellerResponse.Start(DEMO_CHARACTER), StoryTellerResponse.ChooseRoll)
+    fun start(chatId: Long, character: DemoCharacter = DEMO_CHARACTER): List<StoryTellerResponse> {
+        sessionStore.save(StoryTellerSession(chatId, character, SessionStep.CHOOSING_ROLL))
+        return listOf(StoryTellerResponse.Start(character), StoryTellerResponse.ChooseRoll)
     }
 
     fun chooseRoll(chatId: Long, choice: RollChoice): StoryTellerResponse = when (choice) {

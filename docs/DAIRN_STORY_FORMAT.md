@@ -21,8 +21,9 @@ open question. These differences are recorded, not normalized.
 
 `book.yaml` has stable `book-id`, `book-version`, display title, `start-story`,
 and references to stories, cover, illustration catalog, memory events and
-canon. `story.yaml` has `story-id`, `story-version`, `start-chapter`, optional
-cover and a chapter list. Chapter Markdown front matter contains `chapter-id`,
+canon. It may also contain a structured `heroes` list: each hero has a stable
+`id`, while `name` may be intentionally absent. `story.yaml` has `story-id`,
+`story-version`, `start-chapter`, optional cover and a chapter list. Chapter Markdown front matter contains `chapter-id`,
 `story-version`, `language`, `start`, and title.
 
 Technical IDs are stable and are not localized. Equivalent localizations must

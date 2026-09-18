@@ -56,6 +56,14 @@ starting story; its story manifest identifies the starting chapter and each
 chapter source. A package reader must not assume every optional directory
 exists.
 
+## Structured heroes
+
+`book.yaml` may contain a `heroes` list. Every listed hero requires a stable,
+unique `id`; `name` is optional and its absence is meaningful. A package reader
+exposes this list as structured data and does not derive hero fields from prose
+or other authored resources. The package is immutable at runtime: a name
+provided by a reader belongs to a game session, not to this manifest.
+
 ## Minimal validation
 
 Validate ZIP readability, safe paths, package manifest/version, `book.yaml`,

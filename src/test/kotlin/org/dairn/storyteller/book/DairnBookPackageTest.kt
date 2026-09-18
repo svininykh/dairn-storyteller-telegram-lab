@@ -9,6 +9,7 @@ import kotlin.io.path.writeText
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DairnBookPackageTest {
@@ -18,7 +19,15 @@ class DairnBookPackageTest {
         val validation = DairnBookPackage.validate(packagePath)
         assertTrue(validation.valid, validation.errors.joinToString())
         assertEquals(
-            DairnBookPackage.PackageInfo("battles-of-the-great-steppe", "0.8.0", "first-trial"),
+            DairnBookPackage.PackageInfo(
+                "battles-of-the-great-steppe",
+                "0.8.0",
+                "first-trial",
+                listOf(
+                    DairnBookPackage.BookHero("aibike", "Айбике"),
+                    DairnBookPackage.BookHero("karashash", "Қарашаш"),
+                ),
+            ),
             DairnBookPackage.read(packagePath),
         )
     }
@@ -35,6 +44,21 @@ class DairnBookPackageTest {
 
         assertTrue(DairnBookPackage.validate(packagePath).valid)
         assertEquals(DairnBookPackage.PackageInfo("sample", "1", "first"), DairnBookPackage.read(packagePath))
+    }
+
+    @Test fun `reads a hero whose authored name is absent`() {
+        val root = Files.createTempDirectory("dairn-unnamed-hero")
+        root.resolve("stories/first/chapters").createDirectories()
+        root.resolve("book.yaml").writeText("book-id: sample\nbook-version: 1\nstart-story: first\nheroes:\n  - id: wanderer\nstories:\n  - id: first\n    source: stories/first/story.yaml\n")
+        root.resolve("stories/first/story.yaml").writeText("story-id: first\nstart-chapter: one\nchapters:\n  - id: one\n    source: chapters/one.ru.md\n")
+        root.resolve("stories/first/chapters/one.ru.md").writeText("# One {#one}\n")
+        val packagePath = root.resolve("sample.dairn")
+
+        DairnBookPackage.write(root, packagePath)
+
+        val hero = DairnBookPackage.read(packagePath).heroes.single()
+        assertEquals("wanderer", hero.id)
+        assertNull(hero.name)
     }
 
     @Test fun `rejects unsupported package version`() {

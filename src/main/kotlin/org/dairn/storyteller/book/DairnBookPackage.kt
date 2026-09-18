@@ -19,7 +19,15 @@ object DairnBookPackage {
     const val BOOK_MANIFEST = "book.yaml"
     const val PACKAGE_VERSION = "0.1"
 
-    data class PackageInfo(val bookId: String, val bookVersion: String, val startStory: String)
+    /** `null` means that the reader must name this hero for the game session. */
+    data class BookHero(val id: String, val name: String? = null)
+
+    data class PackageInfo(
+        val bookId: String,
+        val bookVersion: String,
+        val startStory: String,
+        val heroes: List<BookHero> = emptyList(),
+    )
 
     fun write(sourceDirectory: Path, destination: Path) {
         require(Files.isDirectory(sourceDirectory)) { "Book source directory does not exist: $sourceDirectory" }
@@ -47,6 +55,7 @@ object DairnBookPackage {
                 scalar(book, "book-id") ?: error("book.yaml must contain book-id"),
                 scalar(book, "book-version") ?: error("book.yaml must contain book-version"),
                 scalar(book, "start-story") ?: error("book.yaml must contain start-story"),
+                heroes(book),
             )
         }
     }
@@ -80,6 +89,8 @@ object DairnBookPackage {
                 stories.forEach { (id, source) ->
                     if (source !in names) errors += "Missing referenced story $id: $source" else validateStory(zip, names.toSet(), source, errors)
                 }
+                val heroes = heroes(book)
+                if (heroes.map { it.id }.size != heroes.map { it.id }.toSet().size) errors += "Duplicate hero ID"
             }
         } catch (e: Exception) {
             errors += "Cannot open package: ${e.message ?: e.javaClass.simpleName}"
@@ -133,6 +144,16 @@ object DairnBookPackage {
             val itemId = match.groupValues[1].trim().trim('"', '\'')
             val itemSource = Regex("(?m)^\\s*${Regex.escape(source)}:\\s*([^\\r\\n]+)").find(match.groupValues[2])?.groupValues?.get(1)?.trim()?.trim('"', '\'')
             itemSource?.let { itemId to it }
+        }.toList()
+    }
+
+    private fun heroes(yaml: String): List<BookHero> {
+        val block = Regex("(?ms)^heroes:\\s*\\n(.*?)(?=^[^ \\t#].*?:|\\z)").find(yaml)?.groupValues?.get(1) ?: return emptyList()
+        return Regex("(?ms)^\\s*-\\s*id:\\s*([^\\r\\n]+)\\s*\\n(.*?)(?=^\\s*-|\\z)").findAll(block).map { match ->
+            val id = match.groupValues[1].trim().trim('\"', '\'')
+            val name = Regex("(?m)^\\s*name:\\s*([^\\r\\n]+)").find(match.groupValues[2])
+                ?.groupValues?.get(1)?.trim()?.trim('\"', '\'')?.takeIf { it.isNotBlank() }
+            BookHero(id, name)
         }.toList()
     }
 
