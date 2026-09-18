@@ -6,12 +6,32 @@ import kotlin.random.Random
 
 data class DemoCharacter(val name: String, val description: String)
 
-enum class SessionStep { CHOOSING_ROLL, WAITING_FOR_MANUAL_ROLL, OMEN_RESOLVED }
+enum class SessionStep {
+    CHOOSING_ROLL,
+    WAITING_FOR_MANUAL_ROLL,
+    WAITING_FOR_PHOTO,
+    WAITING_FOR_PHOTO_CONFIRMATION,
+    OMEN_RESOLVED,
+}
+
+data class DicePhoto(val bytes: ByteArray, val contentType: String)
+
+data class RecognizedDice(val die: String, val value: Int, val confidence: Double)
+
+sealed interface DiceRecognition {
+    data class Recognized(val dice: RecognizedDice) : DiceRecognition
+    data object Uncertain : DiceRecognition
+}
+
+fun interface DiceVisionRecognizer {
+    fun recognize(photo: DicePhoto): DiceRecognition
+}
 
 data class StoryTellerSession(
     val chatId: Long,
     val character: DemoCharacter,
     val step: SessionStep,
+    val pendingDice: RecognizedDice? = null,
     val omen: GreatSteppeOmen? = null,
 )
 
@@ -39,7 +59,9 @@ sealed interface StoryTellerResponse {
     data class Start(val character: DemoCharacter) : StoryTellerResponse
     data object ChooseRoll : StoryTellerResponse
     data object RequestManualRoll : StoryTellerResponse
-    data object PhotoComingNext : StoryTellerResponse
+    data object RequestPhoto : StoryTellerResponse
+    data class PhotoRecognized(val dice: RecognizedDice) : StoryTellerResponse
+    data object PhotoUncertain : StoryTellerResponse
     data class OmenResolved(val roll: Int, val omen: GreatSteppeOmen) : StoryTellerResponse
     data class Error(val message: String) : StoryTellerResponse
 }
@@ -48,6 +70,7 @@ class StoryTellerApplication(
     private val sessionStore: InMemorySessionStore = InMemorySessionStore(),
     private val d20Roller: D20Roller = RandomD20Roller,
     private val omenResolutionService: OmenResolutionService = OmenResolutionService(),
+    private val diceVisionRecognizer: DiceVisionRecognizer = DiceVisionRecognizer { DiceRecognition.Uncertain },
 ) {
     fun start(chatId: Long): List<StoryTellerResponse> {
         sessionStore.save(StoryTellerSession(chatId, DEMO_CHARACTER, SessionStep.CHOOSING_ROLL))
@@ -57,7 +80,7 @@ class StoryTellerApplication(
     fun chooseRoll(chatId: Long, choice: RollChoice): StoryTellerResponse = when (choice) {
         RollChoice.DIGITAL -> resolve(chatId, d20Roller.roll())
         RollChoice.MANUAL -> transitionToManualInput(chatId)
-        RollChoice.PHOTO -> StoryTellerResponse.PhotoComingNext
+        RollChoice.PHOTO -> transitionToPhotoInput(chatId)
     }
 
     fun submitManualRoll(chatId: Long, text: String): StoryTellerResponse {
@@ -71,13 +94,50 @@ class StoryTellerApplication(
         return resolve(chatId, roll)
     }
 
+    fun submitPhoto(chatId: Long, photo: DicePhoto): StoryTellerResponse {
+        val session = sessionStore.get(chatId)
+            ?: return StoryTellerResponse.Error("Сначала отправьте /start.")
+        if (session.step != SessionStep.WAITING_FOR_PHOTO) {
+            return StoryTellerResponse.Error("Сначала выберите распознавание фотографии d20.")
+        }
+        val recognition = runCatching { diceVisionRecognizer.recognize(photo) }
+            .getOrElse { DiceRecognition.Uncertain }
+        val dice = (recognition as? DiceRecognition.Recognized)?.dice
+        if (dice == null || dice.die != "D20" || dice.value !in 1..20) {
+            sessionStore.save(session.copy(pendingDice = null))
+            return StoryTellerResponse.PhotoUncertain
+        }
+        sessionStore.save(session.copy(step = SessionStep.WAITING_FOR_PHOTO_CONFIRMATION, pendingDice = dice))
+        return StoryTellerResponse.PhotoRecognized(dice)
+    }
+
+    fun confirmPhotoRoll(chatId: Long): StoryTellerResponse {
+        val session = sessionStore.get(chatId)
+            ?: return StoryTellerResponse.Error("Сначала отправьте /start.")
+        if (session.step != SessionStep.WAITING_FOR_PHOTO_CONFIRMATION || session.pendingDice == null) {
+            return StoryTellerResponse.Error("Нет значения d20 для подтверждения.")
+        }
+        return resolve(chatId, session.pendingDice.value)
+    }
+
+    fun repeatPhoto(chatId: Long): StoryTellerResponse = transitionToPhotoInput(chatId)
+
+    fun enterManualRoll(chatId: Long): StoryTellerResponse = transitionToManualInput(chatId)
+
     fun session(chatId: Long): StoryTellerSession? = sessionStore.get(chatId)
 
     private fun transitionToManualInput(chatId: Long): StoryTellerResponse {
         val session = sessionStore.get(chatId)
             ?: return StoryTellerResponse.Error("Сначала отправьте /start.")
-        sessionStore.save(session.copy(step = SessionStep.WAITING_FOR_MANUAL_ROLL))
+        sessionStore.save(session.copy(step = SessionStep.WAITING_FOR_MANUAL_ROLL, pendingDice = null))
         return StoryTellerResponse.RequestManualRoll
+    }
+
+    private fun transitionToPhotoInput(chatId: Long): StoryTellerResponse {
+        val session = sessionStore.get(chatId)
+            ?: return StoryTellerResponse.Error("Сначала отправьте /start.")
+        sessionStore.save(session.copy(step = SessionStep.WAITING_FOR_PHOTO, pendingDice = null))
+        return StoryTellerResponse.RequestPhoto
     }
 
     private fun resolve(chatId: Long, roll: Int): StoryTellerResponse {
@@ -87,7 +147,7 @@ class StoryTellerApplication(
             return StoryTellerResponse.Error("Подтверждённый d20 должен быть от 1 до 20.")
         }
         val omen = omenResolutionService.resolveConfirmedD20(roll)
-        sessionStore.save(session.copy(step = SessionStep.OMEN_RESOLVED, omen = omen))
+        sessionStore.save(session.copy(step = SessionStep.OMEN_RESOLVED, pendingDice = null, omen = omen))
         return StoryTellerResponse.OmenResolved(roll, omen)
     }
 

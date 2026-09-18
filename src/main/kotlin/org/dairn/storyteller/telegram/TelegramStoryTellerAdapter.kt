@@ -1,6 +1,7 @@
 package org.dairn.storyteller.telegram
 
 import org.dairn.storyteller.application.RollChoice
+import org.dairn.storyteller.application.DicePhoto
 import org.dairn.storyteller.application.StoryTellerApplication
 import org.dairn.storyteller.application.StoryTellerResponse
 
@@ -15,11 +16,16 @@ class TelegramStoryTellerAdapter(private val application: StoryTellerApplication
             DIGITAL_CALLBACK -> application.chooseRoll(chatId, RollChoice.DIGITAL)
             PHOTO_CALLBACK -> application.chooseRoll(chatId, RollChoice.PHOTO)
             MANUAL_CALLBACK -> application.chooseRoll(chatId, RollChoice.MANUAL)
+            CONFIRM_PHOTO_CALLBACK -> application.confirmPhotoRoll(chatId)
+            REPEAT_PHOTO_CALLBACK -> application.repeatPhoto(chatId)
+            MANUAL_FROM_PHOTO_CALLBACK -> application.enterManualRoll(chatId)
             else -> StoryTellerResponse.Error("Неизвестное действие.")
         },
     )
 
     fun onText(chatId: Long, text: String): TelegramView = render(application.submitManualRoll(chatId, text))
+
+    fun onPhoto(chatId: Long, photo: DicePhoto): TelegramView = render(application.submitPhoto(chatId, photo))
 
     private fun render(response: StoryTellerResponse): TelegramView = when (response) {
         is StoryTellerResponse.Start -> TelegramView("${response.character.name}\n${response.character.description}")
@@ -32,7 +38,22 @@ class TelegramStoryTellerAdapter(private val application: StoryTellerApplication
             ),
         )
         StoryTellerResponse.RequestManualRoll -> TelegramView("Введите подтверждённое значение d20 от 1 до 20.")
-        StoryTellerResponse.PhotoComingNext -> TelegramView("Распознавание фотографии d20 будет реализовано следующим этапом.")
+        StoryTellerResponse.RequestPhoto -> TelegramView("Пришлите фотографию d20. Я предложу значение, а вы подтвердите его перед определением Знамения.")
+        is StoryTellerResponse.PhotoRecognized -> TelegramView(
+            text = "Я распознал: ${response.dice.value} (d20, уверенность: ${"%.0f".format(response.dice.confidence * 100)}%).",
+            keyboard = listOf(
+                listOf(TelegramButton("Подтвердить", CONFIRM_PHOTO_CALLBACK)),
+                listOf(TelegramButton("Повторить", REPEAT_PHOTO_CALLBACK)),
+                listOf(TelegramButton("Ввести вручную", MANUAL_FROM_PHOTO_CALLBACK)),
+            ),
+        )
+        StoryTellerResponse.PhotoUncertain -> TelegramView(
+            text = "Не удалось уверенно распознать d20. Знамение не определено.",
+            keyboard = listOf(
+                listOf(TelegramButton("Повторить", REPEAT_PHOTO_CALLBACK)),
+                listOf(TelegramButton("Ввести вручную", MANUAL_FROM_PHOTO_CALLBACK)),
+            ),
+        )
         is StoryTellerResponse.OmenResolved -> TelegramView(
             "d20: ${response.roll}\nЗнамение: ${response.omen.name}\n${response.omen.description}",
         )
@@ -43,5 +64,8 @@ class TelegramStoryTellerAdapter(private val application: StoryTellerApplication
         const val DIGITAL_CALLBACK = "omen:digital"
         const val PHOTO_CALLBACK = "omen:photo"
         const val MANUAL_CALLBACK = "omen:manual"
+        const val CONFIRM_PHOTO_CALLBACK = "omen:photo:confirm"
+        const val REPEAT_PHOTO_CALLBACK = "omen:photo:repeat"
+        const val MANUAL_FROM_PHOTO_CALLBACK = "omen:photo:manual"
     }
 }

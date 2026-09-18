@@ -5,7 +5,15 @@ Telegram, OpenAI API assistance, `.dairn` stories, and `dairn-gm-engine`.
 
 The repository establishes the architecture and delivery path, and includes a
 minimal Telegram demo for resolving Omens through the external DAIRN Great
-Steppe module. It does not integrate OpenAI or implement DAIRN mechanics.
+Steppe module. It does not implement DAIRN mechanics.
+
+## Photo d20 recognition
+
+The Telegram demo can ask OpenAI Vision to propose a value from a d20 photo.
+Set `OPENAI_API_KEY` before starting the bot; optionally set
+`OPENAI_VISION_MODEL` (defaults to `gpt-4.1-mini`). The proposed value never
+resolves an Omen until the player presses **Подтвердить**. The key is read only
+from the environment and is not stored in this repository.
 
 Start with [the agent guide](AGENTS.md), then see the
 [architecture](ARCHITECTURE.md), [plan](docs/PLAN.md),

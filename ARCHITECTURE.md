@@ -12,7 +12,7 @@ game-rules implementation.
 | --- | --- | --- |
 | Telegram adapter | Receive user updates and deliver rendered replies. | Conversation policy, game rules, or story content. |
 | Session orchestrator | Coordinate a turn, retain session references, and call collaborators. | Telegram API details or DAIRN mechanics. |
-| AI adapter | Convert approved context into a model request and validate structured output. | Durable story or game state. |
+| Dice Vision recognizer | Propose a die type, value, and confidence from a photo via OpenAI Vision. | Omen resolution or any character state change. |
 | Story repository | Locate and load versioned `.dairn` stories. | Runtime session state. |
 | `dairn-gm-engine` | Interpret DAIRN mechanics and produce authoritative state transitions. | Telegram and model integrations. |
 | Session store | Persist the references and state required to resume a player session. | Authored story definitions. |
@@ -36,8 +36,13 @@ The engine must validate every state-changing action. The AI adapter may help
 interpret or narrate a turn, but never becomes a source of truth for DAIRN
 rules or state.
 
+For a photo d20, the application stores a valid proposed value as pending and
+shows the player a confirmation step. Only the explicit confirmation follows
+the normal `OmenResolutionService → dairn-gm-engine` path. An uncertain,
+non-d20, or out-of-range result has no Omen path and offers retry or manual
+input instead.
+
 ## Explicit non-goals for the harness
 
-The current lab includes only a minimal Telegram demonstration adapter. It
-does not integrate OpenAI, alter `dairn-gm-engine`, or implement DAIRN
-mechanics.
+The current lab includes only a minimal Telegram demonstration adapter. It does
+not alter `dairn-gm-engine` or implement DAIRN mechanics.

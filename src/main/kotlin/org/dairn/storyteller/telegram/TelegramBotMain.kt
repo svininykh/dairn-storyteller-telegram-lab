@@ -1,31 +1,51 @@
 package org.dairn.storyteller.telegram
 
 import org.dairn.storyteller.application.StoryTellerApplication
+import org.dairn.storyteller.application.DicePhoto
+import org.dairn.storyteller.vision.OpenAiDiceVisionRecognizer
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient
 import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
+import org.telegram.telegrambots.meta.api.methods.GetFile
 import org.telegram.telegrambots.meta.api.objects.Update
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow
 import org.telegram.telegrambots.meta.generics.TelegramClient
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 
 fun main() {
+    println("DAIRN StoryTeller Telegram Lab v${ApplicationVersion.value}")
     val token = requireNotNull(System.getenv("TELEGRAM_BOT_TOKEN")) {
         "TELEGRAM_BOT_TOKEN must be configured"
     }
     val telegramClient = OkHttpTelegramClient(token)
-    val adapter = TelegramStoryTellerAdapter(StoryTellerApplication())
+    val adapter = TelegramStoryTellerAdapter(StoryTellerApplication(diceVisionRecognizer = OpenAiDiceVisionRecognizer.fromEnvironment()))
     TelegramBotsLongPollingApplication().use { application ->
         application.registerBot(token, StoryTellerUpdateConsumer(telegramClient, adapter))
         Thread.currentThread().join()
     }
 }
 
+object ApplicationVersion {
+    val value: String by lazy {
+        checkNotNull(ApplicationVersion::class.java.classLoader.getResourceAsStream("application.properties")) {
+            "Application version metadata is missing"
+        }.use { input ->
+            java.util.Properties().apply { load(input) }.getProperty("application.version")
+        }
+    }
+}
+
 class StoryTellerUpdateConsumer(
     private val telegramClient: TelegramClient,
     private val adapter: TelegramStoryTellerAdapter,
+    private val token: String = requireNotNull(System.getenv("TELEGRAM_BOT_TOKEN")),
+    private val httpClient: HttpClient = HttpClient.newHttpClient(),
 ) : LongPollingSingleThreadUpdateConsumer {
     override fun consume(update: Update) {
         when {
@@ -35,12 +55,26 @@ class StoryTellerUpdateConsumer(
                 else listOf(adapter.onText(chatId, update.message.text))
                 views.forEach { send(chatId, it) }
             }
+            update.hasMessage() && update.message.hasPhoto() -> {
+                val chatId = update.message.chatId
+                println("Telegram photo received: chatId=$chatId")
+                send(chatId, adapter.onPhoto(chatId, downloadLargestPhoto(update.message.photo.last().fileId)))
+            }
             update.hasCallbackQuery() -> {
                 val callback = update.callbackQuery
                 val chatId = callback.message.chatId
                 send(chatId, adapter.onCallback(chatId, callback.data))
             }
         }
+    }
+
+    private fun downloadLargestPhoto(fileId: String): DicePhoto {
+        val file = telegramClient.execute(GetFile(fileId))
+        val body = httpClient.send(
+            HttpRequest.newBuilder(URI.create("https://api.telegram.org/file/bot$token/${file.filePath}")).GET().build(),
+            HttpResponse.BodyHandlers.ofByteArray(),
+        ).body()
+        return DicePhoto(body, "image/jpeg")
     }
 
     private fun send(chatId: Long, view: TelegramView) {
