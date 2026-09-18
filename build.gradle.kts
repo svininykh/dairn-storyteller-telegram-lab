@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.svininykh.dairn-gm:dairn-gm-great-steppe:v0.1.0-preview.3")
+    implementation("com.github.svininykh.dairn-gm:dairn-gm-great-steppe:v0.1.0-preview.4")
     implementation("org.telegram:telegrambots-longpolling:9.0.0")
     implementation("org.telegram:telegrambots-client:9.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")

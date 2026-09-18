@@ -11,6 +11,9 @@ import org.dairn.storyteller.application.DiceVisionRecognizer
 import org.dairn.storyteller.application.InMemorySessionStore
 import org.dairn.storyteller.application.RecognizedDice
 import org.dairn.storyteller.application.StoryTellerApplication
+import org.dairn.storyteller.narration.HeroStateNarrative
+import org.dairn.storyteller.narration.HeroStateNarrator
+import org.dairn.storyteller.narration.NarrationResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -40,7 +43,7 @@ class TelegramStoryTellerAdapterTest {
         adapter.onStart(99L)
         adapter.onCallback(99L, TelegramStoryTellerAdapter.PHOTO_CALLBACK)
 
-        val view = adapter.onPhoto(99L, DicePhoto(byteArrayOf(1), "image/jpeg"))
+        val view = adapter.onPhoto(99L, DicePhoto(byteArrayOf(1), "image/jpeg")).single()
         val callbacks = view.keyboard.flatten().map(TelegramButton::callbackData)
 
         assertTrue(view.text.contains("Я распознал: 17"))
@@ -62,11 +65,33 @@ class TelegramStoryTellerAdapterTest {
         )
 
         val profile = adapter.onHeroStarted(99L, state).single()
-        val omen = adapter.onCallback(99L, TelegramStoryTellerAdapter.CONTINUE_PROFILE_CALLBACK)
+        val omen = adapter.onCallback(99L, TelegramStoryTellerAdapter.CONTINUE_PROFILE_CALLBACK).single()
 
         assertTrue(profile.text.contains("Жизненный путь"))
         assertEquals(TelegramStoryTellerAdapter.CONTINUE_PROFILE_CALLBACK, profile.keyboard.flatten().single().callbackData)
         assertEquals(TelegramStoryTellerAdapter.DIGITAL_CALLBACK, omen.keyboard.flatten().first().callbackData)
+    }
+
+    @Test
+    fun `Omen result is rendered before the narrator output`() {
+        val narrator = HeroStateNarrator { _, _, _ ->
+            NarrationResult.Narrated(HeroStateNarrative("Ветер меняется. Айбике слышит зов степи."))
+        }
+        val narratorAdapter = TelegramStoryTellerAdapter(
+            StoryTellerApplication(InMemorySessionStore(), D20Roller { 7 }, heroStateNarrator = narrator),
+        )
+        val state = GreatSteppeCharacterGenerator().generate(
+            GreatSteppeGenerationInput("Айбике"),
+            Dice { count, sides -> DiceRoll(List(count) { 1 }, sides) },
+        )
+
+        narratorAdapter.onHeroStarted(99L, state)
+        narratorAdapter.onCallback(99L, TelegramStoryTellerAdapter.CONTINUE_PROFILE_CALLBACK)
+        val views = narratorAdapter.onCallback(99L, TelegramStoryTellerAdapter.DIGITAL_CALLBACK)
+
+        assertEquals(2, views.size)
+        assertTrue(views[0].text.startsWith("d20: 7"))
+        assertEquals("Ветер меняется. Айбике слышит зов степи.", views[1].text)
     }
 
     private class FakeVision : DiceVisionRecognizer {

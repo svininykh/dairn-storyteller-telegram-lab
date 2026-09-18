@@ -85,6 +85,11 @@ HeroStateNarrator → non-authoritative HeroStateNarrative`
 
 The narrator receives immutable snapshots and cannot write a session, alter an
 omen, or modify book content. Its output is a player-facing proposal only.
+After the application has persisted a resolved Omen, it invokes this boundary
+with the session's complete engine-owned `CharacterState`, the Omen, and
+transport-independent story context. Telegram then displays the Omen result
+followed by the returned narrative. A narration failure is presentation-only:
+it does not alter the persisted character or Omen.
 
 ## Generated character session boundary
 

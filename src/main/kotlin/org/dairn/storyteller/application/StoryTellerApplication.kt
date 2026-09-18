@@ -2,6 +2,10 @@ package org.dairn.storyteller.application
 
 import org.dairn.steppe.GreatSteppeOmen
 import org.dairn.storyteller.OmenResolutionService
+import org.dairn.storyteller.narration.HeroStateNarrator
+import org.dairn.storyteller.narration.NarrationResult
+import org.dairn.storyteller.narration.OpenAiHeroStateNarrator
+import org.dairn.storyteller.narration.SceneContext
 import kotlin.random.Random
 
 data class DemoCharacter(val name: String, val description: String)
@@ -65,7 +69,11 @@ sealed interface StoryTellerResponse {
     data object RequestPhoto : StoryTellerResponse
     data class PhotoRecognized(val dice: RecognizedDice) : StoryTellerResponse
     data object PhotoUncertain : StoryTellerResponse
-    data class OmenResolved(val roll: Int, val omen: GreatSteppeOmen) : StoryTellerResponse
+    data class OmenResolved(
+        val roll: Int,
+        val omen: GreatSteppeOmen,
+        val narration: NarrationResult? = null,
+    ) : StoryTellerResponse
     data class Error(val message: String) : StoryTellerResponse
 }
 
@@ -74,6 +82,8 @@ class StoryTellerApplication(
     private val d20Roller: D20Roller = RandomD20Roller,
     private val omenResolutionService: OmenResolutionService = OmenResolutionService(),
     private val diceVisionRecognizer: DiceVisionRecognizer = DiceVisionRecognizer { DiceRecognition.Uncertain },
+    private val heroStateNarrator: HeroStateNarrator? = OpenAiHeroStateNarrator.fromEnvironment().getOrNull(),
+    private val sceneContext: SceneContext = DEMO_SCENE_CONTEXT,
 ) {
     fun start(chatId: Long, character: DemoCharacter = DEMO_CHARACTER): List<StoryTellerResponse> {
         sessionStore.save(StoryTellerSession(chatId, character, SessionStep.CHOOSING_ROLL))
@@ -180,14 +190,27 @@ class StoryTellerApplication(
             return StoryTellerResponse.Error("Подтверждённый d20 должен быть от 1 до 20.")
         }
         val omen = omenResolutionService.resolveConfirmedD20(roll)
-        sessionStore.save(session.copy(step = SessionStep.OMEN_RESOLVED, pendingDice = null, omen = omen))
-        return StoryTellerResponse.OmenResolved(roll, omen)
+        val resolvedSession = session.copy(step = SessionStep.OMEN_RESOLVED, pendingDice = null, omen = omen)
+        sessionStore.save(resolvedSession)
+        val narration = resolvedSession.characterState?.let { characterState ->
+            val narrator = heroStateNarrator
+                ?: return@let NarrationResult.Failure("Повествование сейчас недоступно.")
+            runCatching { narrator.generate(characterState, omen, sceneContext) }
+                .getOrElse { NarrationResult.Failure("Не удалось подготовить повествование.") }
+        }
+        return StoryTellerResponse.OmenResolved(roll, omen, narration)
     }
 
     private companion object {
         val DEMO_CHARACTER = DemoCharacter(
             name = "Айбек",
             description = "Готовый персонаж DAIRN: путник Великой степи.",
+        )
+        val DEMO_SCENE_CONTEXT = SceneContext(
+            bookId = "demo-book",
+            storyId = "demo-story",
+            sceneId = "opening",
+            text = "Путник стоит в Великой степи перед началом пути.",
         )
     }
 }

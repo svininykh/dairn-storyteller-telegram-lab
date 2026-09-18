@@ -85,3 +85,13 @@ active StoryTeller session. Render its existing engine-owned fields as a
 profile, then require an explicit continue action before offering the existing
 Omen d20 choices. No character-generation or Omen rules are added to the
 application or Telegram layers.
+
+## Issue #12 — narrate after Omen resolution
+
+After persisting a valid Omen result, StoryTeller reuses the Issue #6
+`HeroStateNarrator` with the active session's complete `CharacterState`, the
+resolved Omen, and transport-independent `SceneContext`. It returns the Omen
+result and the non-authoritative `HeroStateNarrative` as distinct presentation
+steps; Telegram only renders these application results. Narration failure is
+reported without changing the stored character, Omen, or roll. No narrator may
+run before an Omen exists, and it never writes engine or session state.

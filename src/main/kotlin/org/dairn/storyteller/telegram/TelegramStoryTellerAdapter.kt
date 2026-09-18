@@ -5,6 +5,7 @@ import org.dairn.storyteller.application.DicePhoto
 import org.dairn.storyteller.application.CharacterState
 import org.dairn.storyteller.application.StoryTellerApplication
 import org.dairn.storyteller.application.StoryTellerResponse
+import org.dairn.storyteller.narration.NarrationResult
 
 data class TelegramView(val text: String, val keyboard: List<List<TelegramButton>> = emptyList())
 data class TelegramButton(val label: String, val callbackData: String)
@@ -15,7 +16,7 @@ class TelegramStoryTellerAdapter(private val application: StoryTellerApplication
     fun onHeroStarted(chatId: Long, characterState: CharacterState): List<TelegramView> =
         listOf(render(application.startGeneratedHero(chatId, characterState)))
 
-    fun onCallback(chatId: Long, data: String): TelegramView = render(
+    fun onCallback(chatId: Long, data: String): List<TelegramView> = renderAll(
         when (data) {
             DIGITAL_CALLBACK -> application.chooseRoll(chatId, RollChoice.DIGITAL)
             PHOTO_CALLBACK -> application.chooseRoll(chatId, RollChoice.PHOTO)
@@ -28,9 +29,21 @@ class TelegramStoryTellerAdapter(private val application: StoryTellerApplication
         },
     )
 
-    fun onText(chatId: Long, text: String): TelegramView = render(application.submitManualRoll(chatId, text))
+    fun onText(chatId: Long, text: String): List<TelegramView> = renderAll(application.submitManualRoll(chatId, text))
 
-    fun onPhoto(chatId: Long, photo: DicePhoto): TelegramView = render(application.submitPhoto(chatId, photo))
+    fun onPhoto(chatId: Long, photo: DicePhoto): List<TelegramView> = renderAll(application.submitPhoto(chatId, photo))
+
+    private fun renderAll(response: StoryTellerResponse): List<TelegramView> = when (response) {
+        is StoryTellerResponse.OmenResolved -> buildList {
+            add(render(response))
+            when (val narration = response.narration) {
+                is NarrationResult.Narrated -> add(TelegramView(narration.narrative.text))
+                is NarrationResult.Failure -> add(TelegramView("Не удалось подготовить повествование: ${narration.message}"))
+                null -> Unit
+            }
+        }
+        else -> listOf(render(response))
+    }
 
     private fun render(response: StoryTellerResponse): TelegramView = when (response) {
         is StoryTellerResponse.Start -> TelegramView("${response.character.name}\n${response.character.description}")

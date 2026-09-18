@@ -64,19 +64,19 @@ class StoryTellerUpdateConsumer(
             update.hasMessage() && update.message.hasText() -> {
                 val chatId = update.message.chatId
                 val views = if (update.message.text == "/start") heroStartup.onStart(chatId)
-                else heroStartup.onText(chatId, update.message.text) ?: listOf(adapter.onText(chatId, update.message.text))
+                else heroStartup.onText(chatId, update.message.text) ?: adapter.onText(chatId, update.message.text)
                 views.forEach { send(chatId, it) }
             }
             update.hasMessage() && update.message.hasPhoto() -> {
                 val chatId = update.message.chatId
                 println("Telegram photo received: chatId=$chatId")
-                send(chatId, adapter.onPhoto(chatId, downloadLargestPhoto(update.message.photo.last().fileId)))
+                adapter.onPhoto(chatId, downloadLargestPhoto(update.message.photo.last().fileId)).forEach { send(chatId, it) }
             }
             update.hasCallbackQuery() -> {
                 val callback = update.callbackQuery
                 val chatId = callback.message.chatId
                 val views = if (heroStartup.handlesCallback(callback.data)) heroStartup.onCallback(chatId, callback.data)
-                else listOf(adapter.onCallback(chatId, callback.data))
+                else adapter.onCallback(chatId, callback.data)
                 views.forEach { send(chatId, it) }
             }
         }

@@ -4,6 +4,10 @@ import org.dairn.core.Dice
 import org.dairn.core.DiceRoll
 import org.dairn.steppe.GreatSteppeCharacterGenerator
 import org.dairn.steppe.GreatSteppeGenerationInput
+import org.dairn.storyteller.narration.HeroStateNarrative
+import org.dairn.storyteller.narration.HeroStateNarrator
+import org.dairn.storyteller.narration.NarrationResult
+import org.dairn.storyteller.narration.SceneContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -50,6 +54,49 @@ class StoryTellerApplicationTest {
         assertEquals(20, result.roll)
         assertEquals(20, result.omen.roll)
         assertEquals(SessionStep.OMEN_RESOLVED, sessions.get(CHAT_ID)?.step)
+    }
+
+    @Test
+    fun `resolved Omen narrates with the stored generated character and independent scene context`() {
+        val state = generatedCharacter()
+        var received: Triple<CharacterState, org.dairn.steppe.GreatSteppeOmen, SceneContext>? = null
+        val narrator = HeroStateNarrator { character, omen, scene ->
+            received = Triple(character, omen, scene)
+            NarrationResult.Narrated(HeroStateNarrative("Ветер приносит знамение. Айбике делает первый шаг."))
+        }
+        val application = StoryTellerApplication(
+            InMemorySessionStore(), D20Roller { 7 }, heroStateNarrator = narrator,
+            sceneContext = SceneContext("book-1", "story-1", "scene-1", "Степь молчит."),
+        )
+
+        application.startGeneratedHero(CHAT_ID, state)
+        application.continueAfterCharacterProfile(CHAT_ID)
+        val result = assertIs<StoryTellerResponse.OmenResolved>(application.chooseRoll(CHAT_ID, RollChoice.DIGITAL))
+
+        assertEquals(state, received?.first)
+        assertEquals(result.omen, received?.second)
+        assertEquals("scene-1", received?.third?.sceneId)
+        assertIs<NarrationResult.Narrated>(result.narration)
+        assertEquals(state, application.session(CHAT_ID)?.characterState)
+        assertEquals(result.omen, application.session(CHAT_ID)?.omen)
+    }
+
+    @Test
+    fun `narrator failure preserves the resolved Omen and generated character`() {
+        val state = generatedCharacter()
+        val application = StoryTellerApplication(
+            InMemorySessionStore(), D20Roller { 7 },
+            heroStateNarrator = HeroStateNarrator { _, _, _ -> NarrationResult.Failure("OpenAI недоступен") },
+        )
+
+        application.startGeneratedHero(CHAT_ID, state)
+        application.continueAfterCharacterProfile(CHAT_ID)
+        val result = assertIs<StoryTellerResponse.OmenResolved>(application.chooseRoll(CHAT_ID, RollChoice.DIGITAL))
+
+        assertIs<NarrationResult.Failure>(result.narration)
+        assertEquals(state, application.session(CHAT_ID)?.characterState)
+        assertEquals(result.omen, application.session(CHAT_ID)?.omen)
+        assertEquals(SessionStep.OMEN_RESOLVED, application.session(CHAT_ID)?.step)
     }
 
     @Test
@@ -167,6 +214,11 @@ class StoryTellerApplicationTest {
     private class FakeVision(var result: DiceRecognition = DiceRecognition.Uncertain) : DiceVisionRecognizer {
         override fun recognize(photo: DicePhoto): DiceRecognition = result
     }
+
+    private fun generatedCharacter() = GreatSteppeCharacterGenerator().generate(
+        GreatSteppeGenerationInput("Айбике"),
+        Dice { count, sides -> DiceRoll(List(count) { 1 }, sides) },
+    )
 
     private companion object {
         const val CHAT_ID = 42L

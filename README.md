@@ -15,6 +15,14 @@ Set `OPENAI_API_KEY` before starting the bot; optionally set
 resolves an Omen until the player presses **Подтвердить**. The key is read only
 from the environment and is not stored in this repository.
 
+## Hero-state narration smoke test
+
+After a generated hero's Omen is resolved, the Telegram demo invokes
+`OpenAiHeroStateNarrator` when `OPENAI_API_KEY` is configured. Optionally set
+`OPENAI_NARRATOR_MODEL` (default: `gpt-4.1-mini`). The Omen result is sent
+first, then the two-to-four-sentence narrative proposal. A narration failure
+does not change the stored hero or Omen and is reported separately.
+
 Start with [the agent guide](AGENTS.md), then see the
 [architecture](ARCHITECTURE.md), [plan](docs/PLAN.md),
 [target demo](docs/DEMO.md), and [pre-existing DAIRN record](docs/PRE_EXISTING.md).
