@@ -1,11 +1,12 @@
 # dairn-storyteller-telegram-lab
 
-Planning and integration lab for a DAIRN StoryTeller experience spanning
-Telegram, OpenAI API assistance, `.dairn` stories, and `dairn-gm-engine`.
+Integration lab for a DAIRN StoryTeller experience spanning Telegram, OpenAI
+API assistance, `.dairn` stories, and `dairn-gm-engine`.
 
-The repository establishes the architecture and delivery path, and includes a
-minimal Telegram demo for resolving Omens through the external DAIRN Great
-Steppe module. It does not implement DAIRN mechanics.
+The repository contains a minimal Telegram demo for selecting or naming a
+hero, displaying engine-generated hero state, and resolving Omens through the
+external DAIRN Great Steppe module. It does not implement DAIRN mechanics or
+durable session storage.
 
 ## Photo d20 recognition
 
@@ -27,4 +28,5 @@ does not change the stored hero or Omen and is reported separately.
 Start with [the agent guide](AGENTS.md), then see the
 [architecture](ARCHITECTURE.md), [plan](docs/PLAN.md),
 [target demo](docs/DEMO.md), [Docker deployment guide](docs/DEPLOY.md), and
+[technology manifesto](MANIFESTO.md), and
 [pre-existing DAIRN record](docs/PRE_EXISTING.md).

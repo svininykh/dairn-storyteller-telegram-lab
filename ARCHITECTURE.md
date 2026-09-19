@@ -2,9 +2,10 @@
 
 ## Purpose
 
-The lab will connect a Telegram conversation to a DAIRN StoryTeller session.
-It is an adapter around existing DAIRN assets and `dairn-gm-engine`, not a new
-game-rules implementation.
+The lab connects a minimal Telegram conversation to a DAIRN StoryTeller
+session. It is an adapter around existing DAIRN assets and `dairn-gm-engine`,
+not a new game-rules implementation. Its current session stores are in memory;
+durable resume is not implemented.
 
 ## Components and responsibilities
 
