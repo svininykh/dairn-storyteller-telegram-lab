@@ -10,7 +10,8 @@ Steppe module. It does not implement DAIRN mechanics.
 ## Photo d20 recognition
 
 The Telegram demo can ask OpenAI Vision to propose a value from a d20 photo.
-Set `OPENAI_API_KEY` before starting the bot; optionally set
+`OPENAI_API_KEY` is required by the current application startup path because
+the Vision recognizer is created when the bot starts; optionally set
 `OPENAI_VISION_MODEL` (defaults to `gpt-4.1-mini`). The proposed value never
 resolves an Omen until the player presses **Подтвердить**. The key is read only
 from the environment and is not stored in this repository.
@@ -25,4 +26,5 @@ does not change the stored hero or Omen and is reported separately.
 
 Start with [the agent guide](AGENTS.md), then see the
 [architecture](ARCHITECTURE.md), [plan](docs/PLAN.md),
-[target demo](docs/DEMO.md), and [pre-existing DAIRN record](docs/PRE_EXISTING.md).
+[target demo](docs/DEMO.md), [Docker deployment guide](docs/DEPLOY.md), and
+[pre-existing DAIRN record](docs/PRE_EXISTING.md).
