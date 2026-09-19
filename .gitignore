@@ -29,3 +29,6 @@ replay_pid*
 # Gradle build output
 .gradle/
 build/
+
+# Local deployment configuration and credentials
+.env

@@ -1,0 +1,13 @@
+services:
+  storyteller:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - type: bind
+        source: ${DAIRN_BOOKS_DIR:?Set DAIRN_BOOKS_DIR to the host directory containing the .dairn book.}
+        target: /books
+        read_only: true
+    restart: unless-stopped

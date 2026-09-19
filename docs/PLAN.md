@@ -113,3 +113,13 @@ provider- and Telegram-independent; an AI adapter renders them as provider
 instructions. Preserve the Aibike + Pale Rider input as a local regression
 fixture and cover the semantic failure classes with automated contract
 tests.
+
+## Issue #15 — reviewer-reproducible Docker deployment
+
+Provide a minimal Docker deployment boundary for the existing Gradle/JVM 21
+Telegram application: a multi-stage `Dockerfile`, `compose.yaml`, safe
+`.env.example`, and `docs/DEPLOY.md`. A reviewer supplies credentials and a
+compatible `.dairn` book outside the repository; Compose mounts the book
+read-only and `DAIRN_BOOK_PATH` refers to its in-container location. This is a
+reviewer deployment path only, not VPS provisioning, CI/CD, a change to DAIRN
+rules, or an application-startup redesign.
