@@ -45,6 +45,10 @@ Then set `DAIRN_BOOKS_DIR` to the absolute host path (for example,
 `/books/reviewer-book.dairn`. Compose mounts `DAIRN_BOOKS_DIR` at `/books`
 read-only; the book is never copied into the image.
 
+`DAIRN_BOOK_PATH` is evaluated **inside the container**. Use the host directory
+in `DAIRN_BOOKS_DIR` and its corresponding `/books/book.dairn` path in
+`DAIRN_BOOK_PATH`.
+
 ## Build and start
 
 Build the application image from the checkout:
